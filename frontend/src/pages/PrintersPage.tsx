@@ -2051,6 +2051,7 @@ function PrinterCard({
   cardSize = 2,
   amsThresholds,
   spoolmanEnabled = false,
+  spoolmanModeOn = false,
   linkedSpools,
   spoolmanUrl,
   onGetAssignment,
@@ -2090,6 +2091,8 @@ function PrinterCard({
     tempFair: number;
   };
   spoolmanEnabled?: boolean;
+  /** Spoolman mode is on, connected or not: the built-in slot rows don't apply (#3430). */
+  spoolmanModeOn?: boolean;
   linkedSpools?: Record<string, LinkedSpoolInfo>;
   spoolmanUrl?: string | null;
   onGetAssignment?: (printerId: number, amsId: number, trayId: number) => SpoolAssignment | undefined;
@@ -5752,6 +5755,9 @@ function PrinterCard({
                                               isAssigned: !!slotAssignment || isBambuLabSpool(tray),
                                             };
                                           }
+                                          // Spoolman mode with Spoolman down: neither table may be offered
+                                          // here, and an assign would write a built-in row (#3430).
+                                          if (spoolmanModeOn) return undefined;
                                           const assignment = onGetAssignment?.(printer.id, ams.id, slotIdx);
                                           return {
                                             assignedSpool: assignment?.spool ? {
@@ -6155,6 +6161,9 @@ function PrinterCard({
                                           isAssigned: !!slotAssignment || isBambuLabSpool(tray),
                                         };
                                       }
+                                      // Spoolman mode with Spoolman down: neither table may be offered
+                                      // here, and an assign would write a built-in row (#3430).
+                                      if (spoolmanModeOn) return undefined;
                                       const assignment = onGetAssignment?.(printer.id, ams.id, htSlotId);
                                       return {
                                         assignedSpool: assignment?.spool ? {
@@ -6434,6 +6443,9 @@ function PrinterCard({
                                             isAssigned: !!slotAssignment || isBambuLabSpool(extTray),
                                           };
                                         }
+                                        // Spoolman mode with Spoolman down: neither table may be offered
+                                        // here, and an assign would write a built-in row (#3430).
+                                        if (spoolmanModeOn) return undefined;
                                         const assignment = onGetAssignment?.(printer.id, 255, slotTrayId);
                                         return {
                                           assignedSpool: assignment?.spool ? {
@@ -9100,8 +9112,12 @@ export function PrintersPage() {
     onError: (error: Error) => showToast(error.message || t('spoolman.unlinkFailed'), 'error'),
   });
 
-  // Helper to find assignment for a specific slot
+  // Helper to find assignment for a specific slot. Built-in rows only count in
+  // built-in mode: kept through a switch to Spoolman (#2812), they would
+  // otherwise supply a slot's fill level there (#3430). Off whenever Spoolman
+  // is enabled, connected or not.
   const getAssignment = (printerId: number, amsId: number | string, trayId: number | string): SpoolAssignment | undefined => {
+    if (spoolmanStatus?.enabled) return undefined;
     return spoolAssignments?.find(
       (a) => a.printer_id === printerId && a.ams_id === Number(amsId) && a.tray_id === Number(trayId)
     );
@@ -9999,6 +10015,7 @@ export function PrintersPage() {
                         tempFair: Number(settings.ams_temp_fair) || 35,
                       } : undefined}
                       spoolmanEnabled={spoolmanEnabled}
+                      spoolmanModeOn={!!spoolmanStatus?.enabled}
                       linkedSpools={linkedSpools}
                       spoolmanUrl={spoolmanStatus?.url}
                       onGetAssignment={getAssignment}
@@ -10044,6 +10061,7 @@ export function PrintersPage() {
               viewMode={viewMode}
               cardSize={cardSize}
               spoolmanEnabled={spoolmanEnabled}
+              spoolmanModeOn={!!spoolmanStatus?.enabled}
               linkedSpools={linkedSpools}
               spoolmanUrl={spoolmanStatus?.url}
               onGetAssignment={getAssignment}
