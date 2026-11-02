@@ -5568,6 +5568,7 @@ export default {
     slotEmpty: '空',
     slotUnconfigured: '?',
     emptySlotReset: 'スプール未割当',
+    assignedNotConfigured: 'Bambuddyで割当済み、プリンターにはまだ設定されていません。印刷後、スロットが空くとプリンターに設定されます。',
     unknown: '不明',
     humidity: '湿度',
     temperature: '温度',
